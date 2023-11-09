@@ -8,6 +8,17 @@
 import SwiftUI
 import SwiftData
 
+struct FlagImage: View {
+    var country: String
+    
+    var body: some View {
+        Image(country)
+            .clipShape(.capsule)
+            .shadow(radius: 5)
+        
+    }
+}
+
 struct ContentView: View {
     @State private var countries = ["Estonia", "France", "Germany", "Ireland", "Italy", "Monaco", "Nigeria", "Poland", "Spain", "UK", "Ukraine", "US"].shuffled()
     @State private var correctAnswer = Int.random(in: 0...2)
@@ -19,6 +30,11 @@ struct ContentView: View {
     @State private var message = ""
     @State private var showingScore = false
     @State private var isGameOver = false
+    
+    @State private var animationAmount = 0.0
+    @State private var tappedFlag = 0
+    @State private var opacity = 1.0
+
     
     var body: some View {
         ZStack {
@@ -47,13 +63,18 @@ struct ContentView: View {
                     ForEach(0..<3) { number in
                         Button {
                             flagTapped(number)
-                        } label: {
-                            Image(countries[number])
-                                .clipShape(.capsule)
-                                .shadow(radius: 5)
+                            withAnimation(Animation.easeInOut(duration: 1)) {
+                                animationAmount += 360
+                            }
                             
+                        } label: {
+                            FlagImage(country: countries[number])
                         }
+                        .rotation3DEffect(.degrees(number == correctAnswer ? animationAmount : 0), axis: (x: 0, y: 1, z:0))
+                        
+                        .opacity(number != correctAnswer ? opacity : 1)
                     }
+                    
                     
                 }
                 .frame(maxWidth: .infinity)
@@ -85,6 +106,8 @@ struct ContentView: View {
     }
     
     func flagTapped(_ number: Int) {
+        tappedFlag = number
+        opacity = 0.3
         if number == correctAnswer {
             score += 1
             scoreTitle = "Correct"
@@ -96,15 +119,20 @@ struct ContentView: View {
         }
         questionNumber += 1
         if questionNumber < 8 {
-            showingScore = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                showingScore = true
+            }
         } else {
             message = "Your final score is \(score)/8."
-            isGameOver = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                isGameOver = true
+            }
         }
         
     }
     
     func askQuestion() {
+        opacity = 1
         countries.shuffle()
         correctAnswer = Int.random(in: 0...2)
     }
